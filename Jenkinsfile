@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DOCKER_CREDENTIALS = credentials('34e219f7-0065-448a-8aa2-4a01d4f16db6')
-        KUBECONFIG = '~/.kube/config'
         DOCKER_IMAGE = 'metehan1171/devops-case:latest'
     }
 
@@ -14,42 +13,45 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Push') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                sh '''
-                    echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin
-                    docker push ${DOCKER_IMAGE}
-                    docker logout
-                '''
+                script {
+                    // Build image
+                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    
+                    // Docker Hub login
+                    withCredentials([usernamePassword(credentialsId: '34e219f7-0065-448a-8aa2-4a01d4f16db6', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh '''
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            docker push ${DOCKER_IMAGE}
+                        '''
+                    }
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                    kubectl apply -f kubernetes/deployment.yaml
-                    kubectl apply -f kubernetes/service.yaml
-                    kubectl apply -f kubernetes/ingress.yaml
-                '''
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    sh '''
+                        kubectl apply -f kubernetes/deployment.yaml
+                        kubectl apply -f kubernetes/service.yaml
+                        kubectl apply -f kubernetes/ingress.yaml
+                    '''
+                }
             }
         }
     }
 
     post {
+        always {
+            sh 'docker logout'
+        }
         success {
             echo 'Deployment Successful!'
         }
         failure {
             echo 'Deployment Failed.'
-        }
-        always {
-            sh 'docker logout'
         }
     }
 }
