@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        KUBECONFIG = '~/.kube/config' // Set your kubeconfig file path
+        DOCKER_CREDENTIALS = credentials('34e219f7-0065-448a-8aa2-4a01d4f16db6')
+        KUBECONFIG = '~/.kube/config'
+        DOCKER_IMAGE = 'metehan1171/devops-case:latest'
     }
 
     stages {
@@ -14,27 +16,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("metehan1171/devops-case:latest")
-                }
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://hub.docker.com', '34e219f7-0065-448a-8aa2-4a01d4f16db6') {
-                        dockerImage.push()
-                    }
-                }
+                sh '''
+                    echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin
+                    docker push ${DOCKER_IMAGE}
+                    docker logout
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f kubernetes/deployment.yaml'
-                sh 'kubectl apply -f kubernetes/service.yaml'
-                sh 'kubectl apply -f kubernetes/ingress.yaml'
+                sh '''
+                    kubectl apply -f kubernetes/deployment.yaml
+                    kubectl apply -f kubernetes/service.yaml
+                    kubectl apply -f kubernetes/ingress.yaml
+                '''
             }
         }
     }
@@ -45,6 +47,9 @@ pipeline {
         }
         failure {
             echo 'Deployment Failed.'
+        }
+        always {
+            sh 'docker logout'
         }
     }
 }
