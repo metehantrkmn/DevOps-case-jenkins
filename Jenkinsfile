@@ -15,7 +15,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("2048:${env.BUILD_NUMBER}")
+                    dockerImage = docker.build("metehan1171/devops-case:latest")
                 }
             }
         }
