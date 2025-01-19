@@ -34,9 +34,9 @@ pipeline {
             steps {
                 withKubeConfig([credentialsId: 'kubeconfig']) {
                     sh '''
-                        kubectl apply -f kubernetes/deployment.yaml
-                        kubectl apply -f kubernetes/service.yaml
-                        kubectl apply -f kubernetes/ingress.yaml
+                        kubectl apply -f kubernetes/deployment.yaml --validate=false
+                        kubectl apply -f kubernetes/service.yaml --validate=false
+                        kubectl apply -f kubernetes/ingress.yaml --validate=false
                     '''
                 }
             }
