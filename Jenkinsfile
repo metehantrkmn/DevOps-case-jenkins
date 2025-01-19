@@ -32,11 +32,22 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
+                withKubeConfig([
+                    credentialsId: 'kubeconfig',
+                    contextName: 'jenkins-context'
+                ]) {
                     sh '''
-                        kubectl apply -f kubernetes/deployment.yaml --validate=false
-                        kubectl apply -f kubernetes/service.yaml --validate=false
-                        kubectl apply -f kubernetes/ingress.yaml --validate=false
+                        # Verify connection
+                        kubectl config current-context
+                        kubectl get nodes
+                        
+                        # Apply manifests
+                        kubectl apply -f kubernetes/deployment.yaml
+                        kubectl apply -f kubernetes/service.yaml
+                        kubectl apply -f kubernetes/ingress.yaml
+                        
+                        # Verify deployment
+                        kubectl get pods
                     '''
                 }
             }
