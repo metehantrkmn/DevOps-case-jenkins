@@ -34,7 +34,7 @@ pipeline {
             steps {
                 withKubeConfig([
                     credentialsId: 'kubeconfig',
-                    contextName: 'jenkins-context'
+                    contextName: 'kind-kind'
                 ]) {
                     sh '''
                         # Verify connection
