@@ -20,7 +20,7 @@ pipeline {
                     sh "docker build -t ${DOCKER_IMAGE} ."
                     
                     // Docker Hub login
-                    withCredentials([usernamePassword(credentialsId: '34e219f7-0065-448a-8aa2-4a01d4f16db6', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    withCredentials([usernamePassword(credentialsId: 'a5884346-f700-4718-b5b7-e73af5fe3bc7', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh '''
                             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
                             docker push ${DOCKER_IMAGE}
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 withKubeConfig([
                     credentialsId: 'kubeconfig',
-                    contextName: 'kind-kind'
+                    contextName: 'docker-desktop'
                 ]) {
                     sh '''
                         # Verify connection
@@ -52,12 +52,15 @@ pipeline {
                 }
             }
         }
+
+        stage('Cleanup') {
+            steps {
+                sh 'docker logout'
+            }
+        }
     }
 
     post {
-        always {
-            sh 'docker logout'
-        }
         success {
             echo 'Deployment Successful!'
         }
